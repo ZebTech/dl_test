@@ -10,6 +10,7 @@ from data import Data, RotationalDDM
 
 from sklearn.datasets import fetch_mldata
 from sklearn import neighbors
+from sklearn.metrics import accuracy_score
 
 from pdb import set_trace as debug
 
@@ -136,11 +137,11 @@ def train(d=None):
         predictions = np.array(predict(train_X[:2000]))
 #        predictions = np.array([predict([f, ])[0] for f in train_X[:2000]])
         print np.min(predictions), np.max(predictions)
-        print 'Logloss on train: ' + str(online_score(predictions, train_y))
+        print 'Logloss on train: ' + str(accuracy_score(train_y, predictions))
         # predictions = [predict([f, ])[0] for f in test_X]
         predictions = np.array(predict(test_X))
         print np.min(predictions), np.max(predictions)
-        score = online_score(predictions, test_y)
+        score = accuracy_score(test_y, predictions)
         print 'Logloss on test: ' + str(score)
         best, best_iter = (best, best_iter) if best < score else (score, i)
         print 'Current best: ' + str(best) + ' at iter ' + str(best_iter)
