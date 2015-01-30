@@ -10,7 +10,7 @@ from data import Data, RotationalDDM
 
 from sklearn.datasets import fetch_mldata
 from sklearn import neighbors
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report
 
 from pdb import set_trace as debug
 
@@ -47,6 +47,7 @@ def train(d=None):
     train_y = np.array(d.train_Y)
     test_X = np.array(d.test_X)
     test_y = np.array(d.test_Y)
+    nb_classes = len(np.unique(train_y))
     train_y = convert_one_hot(train_y)
     # train_set = RotationalDDM(
     #     X=train_X, y=train_y, y_labels=np.unique(d.train_Y).shape[0])
@@ -109,14 +110,15 @@ def train(d=None):
         sparse_init=512,
     )
     out = mlp.Softmax(
-        n_classes=np.unique(d.train_Y).shape[0],
+        n_classes=nb_classes,
         layer_name='output',
         # irange=.235,
         max_col_norm=1.9365,
+        sparse_init=nb_classes,
     )
     epochs = EpochCounter(100)
     layers = [c0, c1, out]
-    decay_coeffs = [0.002, 1.5]
+    decay_coeffs = [0.002, 0.002, 0.005]
     in_space = Conv2DSpace(
         shape=[d.size, d.size],
         num_channels=1,
@@ -134,7 +136,7 @@ def train(d=None):
         batch_size=batch_size,
         train_iteration_mode='even_shuffled_sequential',
         termination_criterion=epochs,
-        learning_rule=learning_rule.Momentum(init_momentum=0.9),
+        learning_rule=learning_rule.Momentum(init_momentum=0.5),
     )
     trainer.setup(nn, train_set)
     print 'Learning'
@@ -152,18 +154,19 @@ def train(d=None):
         trainer.train(dataset=train_set)
         print 'Evaluating...'
         predictions = convert_categorical(predict(train_X[:2000]))
-        score = ac_score(convert_categorical(train_y[:2000]), predictions)
+        score = accuracy_score(
+            convert_categorical(train_y[:2000]), predictions)
         print 'Score on train: ' + str(score)
         predictions = convert_categorical(predict(test_X))
-        score = ac_score(test_y, predictions)
+        score = accuracy_score(test_y, predictions)
         print 'Score on test: ' + str(score)
         best, best_iter = (best, best_iter) if best > score else (score, i)
         print 'Current best: ' + str(best) + ' at iter ' + str(best_iter)
+        print classification_report(test_y, predictions)
         i += 1
         print ' '
 
 if __name__ == '__main__':
-    # d = Data(size=32, train_perc=0.1, test_perc=0.015, valid_perc=0.1, augmentation=0)
     mnist = fetch_mldata('MNIST original')
     d = Data(dataset=mnist, train_perc=0.9, valid_perc=0.0, test_perc=0.1,
              shuffle=False)
