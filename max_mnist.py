@@ -29,8 +29,17 @@ warnings.filterwarnings("ignore")
 
 
 def ac_score(y, pred):
-    s = np.array(y) == np.array(pred)
-    return np.sum(s) / len(s)
+    s = np.array(np.array(y) == np.array(pred))
+    return float(np.sum(s)) / float(len(s))
+
+
+def convert_one_hot(data):
+    return np.array([[1 if y == c else 0 for c in xrange(
+        np.unique(data).shape[0])] for y in data])
+
+
+def convert_categorical(data):
+    return np.argmax(data, axis=1)
 
 
 def train(d=None):
@@ -38,12 +47,11 @@ def train(d=None):
     train_y = np.array(d.train_Y)
     test_X = np.array(d.test_X)
     test_y = np.array(d.test_Y)
-    train_y = np.array([[1 if y == c else 0 for c in xrange(
-        np.unique(d.train_Y).shape[0])] for y in train_y])
+    train_y = convert_one_hot(train_y)
     # train_set = RotationalDDM(
     #     X=train_X, y=train_y, y_labels=np.unique(d.train_Y).shape[0])
     train_set = DenseDesignMatrix(
-        X=train_X, y=train_y, y_labels=np.unique(d.train_Y).shape[0])
+        X=train_X, y=train_y, y_labels=np.unique(train_y).shape[0])
     print 'Setting up'
     batch_size = 256
     c0 = mlp.ConvRectifiedLinear(
@@ -139,14 +147,13 @@ def train(d=None):
         print 'Training Epoch ' + str(i)
         trainer.train(dataset=train_set)
         print 'Evaluating...'
-        predictions = np.array(predict(train_X[:2000]))
-        predictions = np.argmax(predictions[:], axis=1)
-        print 'Logloss on train: ' + str(ac_score(train_y[:2000], predictions[:]))
-        predictions = np.array(predict(test_X))
-        predictions = np.argmax(predictions[:], axis=1)
-        score = ac_score(test_y, np.argmax(predictions[:]))
-        print 'Logloss on test: ' + str(score)
-        best, best_iter = (best, best_iter) if best < score else (score, i)
+        predictions = convert_categorical(predict(train_X[:2000]))
+        score = ac_score(convert_categorical(train_y[:2000]), predictions)
+        print 'Score on train: ' + str(score)
+        predictions = convert_categorical(predict(test_X))
+        score = ac_score(test_y, predictions)
+        print 'Score on test: ' + str(score)
+        best, best_iter = (best, best_iter) if best > score else (score, i)
         print 'Current best: ' + str(best) + ' at iter ' + str(best_iter)
         i += 1
         print ' '
@@ -154,6 +161,6 @@ def train(d=None):
 if __name__ == '__main__':
     # d = Data(size=32, train_perc=0.1, test_perc=0.015, valid_perc=0.1, augmentation=0)
     mnist = fetch_mldata('MNIST original')
-    d = Data(dataset=mnist, train_perc=0.9, valid_perc=0.0, test_perc=0.1,
+    d = Data(dataset=mnist, train_perc=0.1, valid_perc=0.0, test_perc=0.1,
              shuffle=False)
     train(d=d)
