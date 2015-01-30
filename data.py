@@ -15,7 +15,7 @@ from math import sqrt
 TRAIN_PERCENT = 0.7
 VALID_PERCENT = 0.1
 TEST_PERCENT = 0.2
-SAVE = True
+SAVE = False
 
 
 def print_images(images, folder='cropped/'):

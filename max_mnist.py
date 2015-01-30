@@ -22,7 +22,7 @@ from pylearn2.training_algorithms.sgd import MonitorBasedLRAdjuster
 from pylearn2.termination_criteria import EpochCounter
 from pylearn2.datasets.dense_design_matrix import DenseDesignMatrix
 from pylearn2.space import Conv2DSpace, VectorSpace
-from pylearn2.costs.cost import SumOfCosts
+from pylearn2.costs.cost import SumOfCosts, MethodCost
 from pylearn2.costs.mlp import dropout, WeightDecay
 
 warnings.filterwarnings("ignore")
@@ -45,18 +45,18 @@ def convert_categorical(data):
 def train(d=None):
     train_X = np.array(d.train_X)
     train_y = np.array(d.train_Y)
+    valid_X = np.array(d.valid_X)
+    valid_y = np.array(d.valid_Y)
     test_X = np.array(d.test_X)
     test_y = np.array(d.test_Y)
     nb_classes = len(np.unique(train_y))
     train_y = convert_one_hot(train_y)
-    # train_set = RotationalDDM(
-    #     X=train_X, y=train_y, y_labels=np.unique(d.train_Y).shape[0])
-    train_set = DenseDesignMatrix(
-        X=train_X, y=train_y,
-        # y_labels=len(np.unique(train_y))
-    )
+    valid_y = convert_one_hot(valid_y)
+    # train_set = RotationalDDM(X=train_X, y=train_y)
+    train_set = DenseDesignMatrix(X=train_X, y=train_y)
+    valid_set = DenseDesignMatrix(X=valid_X, y=valid_y)
     print 'Setting up'
-    batch_size = 256
+    batch_size = 128
     c0 = mlp.ConvRectifiedLinear(
         layer_name='c0',
         output_channels=64,
@@ -64,7 +64,7 @@ def train(d=None):
         kernel_shape=[5, 5],
         pool_shape=[4, 4],
         pool_stride=[2, 2],
-        W_lr_scale=0.25,
+        # W_lr_scale=0.25,
         max_kernel_norm=1.9365
     )
     c1 = mlp.ConvRectifiedLinear(
@@ -74,7 +74,7 @@ def train(d=None):
         kernel_shape=[5, 5],
         pool_shape=[4, 4],
         pool_stride=[2, 2],
-        W_lr_scale=0.25,
+        # W_lr_scale=0.25,
         max_kernel_norm=1.9365
     )
     c2 = mlp.ConvRectifiedLinear(
@@ -118,25 +118,30 @@ def train(d=None):
     )
     epochs = EpochCounter(100)
     layers = [c0, c1, out]
-    decay_coeffs = [0.002, 0.002, 0.005]
+    decay_coeffs = [.00005, .00005, .00005]
     in_space = Conv2DSpace(
         shape=[d.size, d.size],
         num_channels=1,
         # axes=['c', 0, 1, 'b'],
     )
     vec_space = VectorSpace(d.size ** 2)
-    nn = mlp.MLP(
-        layers=layers, input_space=in_space, batch_size=batch_size)
+    nn = mlp.MLP(layers=layers, input_space=in_space, batch_size=batch_size)
     trainer = sgd.SGD(
-        learning_rate=1e-1,
+        learning_rate=.01,
         cost=SumOfCosts(costs=[
-            dropout.Dropout(),
-            # WeightDecay(decay_coeffs),
+            # dropout.Dropout(),
+            MethodCost(method='cost_from_X'),
+            WeightDecay(decay_coeffs),
         ]),
         batch_size=batch_size,
         train_iteration_mode='even_shuffled_sequential',
         termination_criterion=epochs,
         learning_rule=learning_rule.Momentum(init_momentum=0.5),
+    )
+    momentum_adjustor = learning_rule.MomentumAdjustor(
+        final_momentum=.99,
+        start=1,
+        saturate=10
     )
     trainer.setup(nn, train_set)
     print 'Learning'
@@ -163,11 +168,13 @@ def train(d=None):
         best, best_iter = (best, best_iter) if best > score else (score, i)
         print 'Current best: ' + str(best) + ' at iter ' + str(best_iter)
         print classification_report(test_y, predictions)
+        print 'Adjusting parameters...'
+        momentum_adjustor.on_monitor(nn, valid_set, trainer)
         i += 1
         print ' '
 
 if __name__ == '__main__':
     mnist = fetch_mldata('MNIST original')
-    d = Data(dataset=mnist, train_perc=0.9, valid_perc=0.0, test_perc=0.1,
+    d = Data(dataset=mnist, train_perc=0.7, valid_perc=0.15, test_perc=0.15,
              shuffle=False)
     train(d=d)
