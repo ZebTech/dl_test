@@ -135,13 +135,11 @@ def train(d=None):
         trainer.train(dataset=train_set)
         print 'Evaluating...'
         predictions = np.array(predict(train_X[:2000]))
-#        predictions = np.array([predict([f, ])[0] for f in train_X[:2000]])
-        print np.min(predictions), np.max(predictions)
-        print 'Logloss on train: ' + str(accuracy_score(train_y, predictions))
-        # predictions = [predict([f, ])[0] for f in test_X]
+        predictions = np.argmax(predictions[:])
+        print 'Logloss on train: ' + str(accuracy_score(train_y[:2000], predictions[:]))
         predictions = np.array(predict(test_X))
-        print np.min(predictions), np.max(predictions)
-        score = accuracy_score(test_y, predictions)
+        predictions = np.argmax(predictions[:])
+        score = accuracy_score(test_y, np.argmax(predictions[:]))
         print 'Logloss on test: ' + str(score)
         best, best_iter = (best, best_iter) if best < score else (score, i)
         print 'Current best: ' + str(best) + ' at iter ' + str(best_iter)
