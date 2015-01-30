@@ -112,7 +112,7 @@ def train(d=None):
         learning_rate=1e-7,
         cost=SumOfCosts(costs=[
             dropout.Dropout(),
-            WeightDecay(decay_coeffs),
+            # WeightDecay(decay_coeffs),
         ]),
         batch_size=batch_size,
         train_iteration_mode='even_shuffled_sequential',
@@ -135,10 +135,11 @@ def train(d=None):
         trainer.train(dataset=train_set)
         print 'Evaluating...'
         predictions = np.array(predict(train_X[:2000]))
-        predictions = np.argmax(predictions[:])
+        debug()
+        predictions = np.argmax(predictions[:], axis=1)
         print 'Logloss on train: ' + str(accuracy_score(train_y[:2000], predictions[:]))
         predictions = np.array(predict(test_X))
-        predictions = np.argmax(predictions[:])
+        predictions = np.argmax(predictions[:], axis=1)
         score = accuracy_score(test_y, np.argmax(predictions[:]))
         print 'Logloss on test: ' + str(score)
         best, best_iter = (best, best_iter) if best < score else (score, i)
