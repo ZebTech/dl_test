@@ -157,6 +157,7 @@ def train(d=None):
         print '--------------'
         print 'Training Epoch ' + str(i)
         trainer.train(dataset=train_set)
+        nn.monitor()
         print 'Evaluating...'
         predictions = convert_categorical(predict(train_X[:2000]))
         score = accuracy_score(
