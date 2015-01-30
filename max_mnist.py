@@ -13,7 +13,7 @@ from sklearn.metrics import accuracy_score, classification_report
 from pdb import set_trace as debug
 
 from pylearn2.models import mlp, maxout
-from pylearn2.training_algorithms import sgd, learning_rule
+from pylearn2.training_algorithms import bgd, sgd, learning_rule
 from pylearn2.training_algorithms.sgd import LinearDecayOverEpoch
 from pylearn2.termination_criteria import EpochCounter
 from pylearn2.datasets.dense_design_matrix import DenseDesignMatrix
@@ -107,37 +107,50 @@ def train(d=None):
     )
     s0 = mlp.Sigmoid(
         layer_name='s0',
-        dim=nb_classes,
-        max_col_norm=1.9365,
-        sparse_init=nb_classes,
+        dim=500,
+        # max_col_norm=1.9365,
+        sparse_init=15,
     )
     out = mlp.Softmax(
         n_classes=nb_classes,
         layer_name='output',
-        # irange=.235,
-        max_col_norm=1.9365,
-        sparse_init=nb_classes,
+        irange=.0,
+        # max_col_norm=1.9365,
+        # sparse_init=nb_classes,
     )
     epochs = EpochCounter(100)
-    layers = [c0, s0]
+    layers = [s0, out]
     decay_coeffs = [.00005, .00005, .00005]
     in_space = Conv2DSpace(
         shape=[d.size, d.size],
         num_channels=1,
     )
     vec_space = VectorSpace(d.size ** 2)
-    nn = mlp.MLP(layers=layers, input_space=in_space, batch_size=batch_size)
+    nn = mlp.MLP(
+        layers=layers,
+        # input_space=in_space,
+        nvis=d.size**2,
+        # batch_size=batch_size,
+    )
     trainer = sgd.SGD(
         learning_rate=0.01,
-        cost=SumOfCosts(costs=[
-            # dropout.Dropout(),
-            # MethodCost(method='cost_from_X'),
-            # WeightDecay(decay_coeffs),
-        ]),
+        # cost=SumOfCosts(costs=[
+        # dropout.Dropout(),
+        #     MethodCost(method='cost_from_X'),
+        # WeightDecay(decay_coeffs),
+        # ]),
+        # cost=MethodCost(method='cost_from_X'),
         batch_size=batch_size,
         # train_iteration_mode='even_shuffled_sequential',
         termination_criterion=epochs,
-        learning_rule=learning_rule.Momentum(init_momentum=0.5),
+        # learning_rule=learning_rule.Momentum(init_momentum=0.5),
+    )
+    trainer = bgd.BGD(
+        batch_size=10000,
+        line_search_mode='exhaustive',
+        conjugate=1,
+        updates_per_batch=10,
+        termination_criterion=epochs,
     )
     lr_adjustor = LinearDecayOverEpoch(
         start=1,
