@@ -108,6 +108,8 @@ def train(d=None):
     s0 = mlp.Sigmoid(
         layer_name='s0',
         dim=nb_classes,
+        max_col_norm=1.9365,
+        sparse_init=nb_classes,
     )
     out = mlp.Softmax(
         n_classes=nb_classes,
