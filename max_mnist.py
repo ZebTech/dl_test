@@ -175,6 +175,6 @@ def train(d=None):
 
 if __name__ == '__main__':
     mnist = fetch_mldata('MNIST original')
-    d = Data(dataset=mnist, train_perc=0.7, valid_perc=0.15, test_perc=0.15,
+    d = Data(dataset=mnist, train_perc=0.7, valid_perc=0.2, test_perc=0.1,
              shuffle=False)
     train(d=d)
