@@ -122,7 +122,7 @@ def train(d=None):
     vec_space = VectorSpace(d.size ** 2)
     nn = mlp.MLP(layers=layers, input_space=in_space, batch_size=batch_size)
     trainer = sgd.SGD(
-        learning_rate=0.1,
+        learning_rate=1.1,
         cost=SumOfCosts(costs=[
             dropout.Dropout(),
             MethodCost(method='cost_from_X'),
@@ -131,9 +131,11 @@ def train(d=None):
         batch_size=batch_size,
         train_iteration_mode='even_shuffled_sequential',
         termination_criterion=epochs,
-        learning_rule=learning_rule.Momentum(init_momentum=0.5),
+        learning_rule=learning_rule.Momentum(init_momentum=0.1),
     )
-    lr_adjustor = MonitorBasedLRAdjuster()
+    lr_adjustor = MonitorBasedLRAdjuster(
+        dataset_name='train',
+    )
     momentum_adjustor = learning_rule.MomentumAdjustor(
         final_momentum=.99,
         start=1,
@@ -141,7 +143,6 @@ def train(d=None):
     )
     trainer.setup(nn, train_set)
     print 'Learning'
-    # try to remove this code:
     test_X = vec_space.np_format_as(test_X, nn.get_input_space())
     train_X = vec_space.np_format_as(train_X, nn.get_input_space())
     i = 0
@@ -174,7 +175,7 @@ def train(d=None):
 
 if __name__ == '__main__':
     mnist = fetch_mldata('MNIST original')
-    mnist.data = np.rint(mnist.data/255)
+    mnist.data = np.rint(mnist.data / 255)
     d = Data(dataset=mnist, train_perc=0.7, valid_perc=0.2, test_perc=0.1,
              shuffle=False)
     train(d=d)
