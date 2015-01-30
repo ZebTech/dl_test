@@ -28,6 +28,11 @@ from pylearn2.costs.mlp import dropout, WeightDecay
 warnings.filterwarnings("ignore")
 
 
+def ac_score(y, pred):
+    s = np.array(y) == np.array(pred)
+    return np.sum(s) / len(s)
+
+
 def train(d=None):
     train_X = np.array(d.train_X)
     train_y = np.array(d.train_Y)
@@ -135,12 +140,11 @@ def train(d=None):
         trainer.train(dataset=train_set)
         print 'Evaluating...'
         predictions = np.array(predict(train_X[:2000]))
-        debug()
         predictions = np.argmax(predictions[:], axis=1)
-        print 'Logloss on train: ' + str(accuracy_score(train_y[:2000], predictions[:]))
+        print 'Logloss on train: ' + str(ac_score(train_y[:2000], predictions[:]))
         predictions = np.array(predict(test_X))
         predictions = np.argmax(predictions[:], axis=1)
-        score = accuracy_score(test_y, np.argmax(predictions[:]))
+        score = ac_score(test_y, np.argmax(predictions[:]))
         print 'Logloss on test: ' + str(score)
         best, best_iter = (best, best_iter) if best < score else (score, i)
         print 'Current best: ' + str(best) + ' at iter ' + str(best_iter)
