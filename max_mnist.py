@@ -35,7 +35,7 @@ def ac_score(y, pred):
 
 def convert_one_hot(data):
     return np.array([[1 if y == c else 0 for c in xrange(
-        np.unique(data).shape[0])] for y in data])
+        len(np.unique(data)))] for y in data])
 
 
 def convert_categorical(data):
@@ -51,28 +51,30 @@ def train(d=None):
     # train_set = RotationalDDM(
     #     X=train_X, y=train_y, y_labels=np.unique(d.train_Y).shape[0])
     train_set = DenseDesignMatrix(
-        X=train_X, y=train_y, y_labels=np.unique(train_y).shape[0])
+        X=train_X, y=train_y,
+        # y_labels=len(np.unique(train_y))
+    )
     print 'Setting up'
     batch_size = 256
     c0 = mlp.ConvRectifiedLinear(
         layer_name='c0',
-        output_channels=96,
+        output_channels=64,
         irange=.05,
         kernel_shape=[5, 5],
         pool_shape=[4, 4],
-        pool_stride=[4, 4],
+        pool_stride=[2, 2],
         W_lr_scale=0.25,
-        # max_kernel_norm=1.9365
+        max_kernel_norm=1.9365
     )
     c1 = mlp.ConvRectifiedLinear(
         layer_name='c1',
-        output_channels=128,
+        output_channels=64,
         irange=.05,
-        kernel_shape=[3, 3],
+        kernel_shape=[5, 5],
         pool_shape=[4, 4],
         pool_stride=[2, 2],
         W_lr_scale=0.25,
-        # max_kernel_norm=1.9365
+        max_kernel_norm=1.9365
     )
     c2 = mlp.ConvRectifiedLinear(
         layer_name='c2',
@@ -109,20 +111,22 @@ def train(d=None):
     out = mlp.Softmax(
         n_classes=np.unique(d.train_Y).shape[0],
         layer_name='output',
-        irange=.235,
+        # irange=.235,
+        max_col_norm=1.9365,
     )
     epochs = EpochCounter(100)
     layers = [c0, c1, out]
-    decay_coeffs = [0.002, 0.002, 1.5]
+    decay_coeffs = [0.002, 1.5]
     in_space = Conv2DSpace(
         shape=[d.size, d.size],
         num_channels=1,
         # axes=['c', 0, 1, 'b'],
     )
     vec_space = VectorSpace(d.size ** 2)
-    nn = mlp.MLP(layers=layers, input_space=in_space, batch_size=batch_size)
+    nn = mlp.MLP(
+        layers=layers, input_space=in_space, batch_size=batch_size)
     trainer = sgd.SGD(
-        learning_rate=1e-7,
+        learning_rate=1e-1,
         cost=SumOfCosts(costs=[
             dropout.Dropout(),
             # WeightDecay(decay_coeffs),
@@ -140,7 +144,7 @@ def train(d=None):
     X = nn.get_input_space().make_theano_batch()
     Y = nn.fprop(X)
     predict = theano.function([X], Y)
-    best = 40
+    best = -40
     best_iter = -1
     while trainer.continue_learning(nn):
         print '--------------'
@@ -161,6 +165,6 @@ def train(d=None):
 if __name__ == '__main__':
     # d = Data(size=32, train_perc=0.1, test_perc=0.015, valid_perc=0.1, augmentation=0)
     mnist = fetch_mldata('MNIST original')
-    d = Data(dataset=mnist, train_perc=0.1, valid_perc=0.0, test_perc=0.1,
+    d = Data(dataset=mnist, train_perc=0.9, valid_perc=0.0, test_perc=0.1,
              shuffle=False)
     train(d=d)
