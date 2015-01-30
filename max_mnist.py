@@ -52,7 +52,7 @@ def train(d=None):
     train_set = DenseDesignMatrix(X=train_X, y=train_y)
     valid_set = DenseDesignMatrix(X=valid_X, y=valid_y)
     print 'Setting up'
-    batch_size = 128
+    batch_size = 100
     c0 = mlp.ConvRectifiedLinear(
         layer_name='c0',
         output_channels=64,
@@ -75,11 +75,11 @@ def train(d=None):
     )
     c2 = mlp.ConvRectifiedLinear(
         layer_name='c2',
-        output_channels=128,
+        output_channels=64,
         irange=.05,
-        kernel_shape=[2, 2],
-        pool_shape=[2, 2],
-        pool_stride=[2, 2],
+        kernel_shape=[5, 5],
+        pool_shape=[4, 4],
+        pool_stride=[5, 4],
         W_lr_scale=0.25,
         # max_kernel_norm=1.9365
     )
@@ -105,6 +105,10 @@ def train(d=None):
         dim=512,
         sparse_init=512,
     )
+    s0 = mlp.Sigmoid(
+        layer_name='s0',
+        dim=nb_classes,
+    )
     out = mlp.Softmax(
         n_classes=nb_classes,
         layer_name='output',
@@ -113,7 +117,7 @@ def train(d=None):
         sparse_init=nb_classes,
     )
     epochs = EpochCounter(100)
-    layers = [c0, c1, out]
+    layers = [c0, s0]
     decay_coeffs = [.00005, .00005, .00005]
     in_space = Conv2DSpace(
         shape=[d.size, d.size],
@@ -122,16 +126,16 @@ def train(d=None):
     vec_space = VectorSpace(d.size ** 2)
     nn = mlp.MLP(layers=layers, input_space=in_space, batch_size=batch_size)
     trainer = sgd.SGD(
-        learning_rate=0.05,
+        learning_rate=0.01,
         cost=SumOfCosts(costs=[
-            dropout.Dropout(),
-            MethodCost(method='cost_from_X'),
-            WeightDecay(decay_coeffs),
+            # dropout.Dropout(),
+            # MethodCost(method='cost_from_X'),
+            # WeightDecay(decay_coeffs),
         ]),
         batch_size=batch_size,
-        train_iteration_mode='even_shuffled_sequential',
+        # train_iteration_mode='even_shuffled_sequential',
         termination_criterion=epochs,
-        learning_rule=learning_rule.Momentum(init_momentum=0.1),
+        learning_rule=learning_rule.Momentum(init_momentum=0.5),
     )
     lr_adjustor = LinearDecayOverEpoch(
         start=1,
@@ -170,14 +174,14 @@ def train(d=None):
         print 'Current best: ' + str(best) + ' at iter ' + str(best_iter)
         print classification_report(test_y, predictions)
         print 'Adjusting parameters...'
-        momentum_adjustor.on_monitor(nn, valid_set, trainer)
-        lr_adjustor.on_monitor(nn, valid_set, trainer)
+        # momentum_adjustor.on_monitor(nn, valid_set, trainer)
+        # lr_adjustor.on_monitor(nn, valid_set, trainer)
         i += 1
         print ' '
 
 if __name__ == '__main__':
     mnist = fetch_mldata('MNIST original')
     mnist.data = np.rint(mnist.data / 255)
-    d = Data(dataset=mnist, train_perc=0.7, valid_perc=0.2, test_perc=0.1,
-             shuffle=False)
+    d = Data(dataset=mnist, train_perc=0.8, valid_perc=0.1, test_perc=0.1,
+             shuffle=True)
     train(d=d)
