@@ -14,7 +14,7 @@ from pdb import set_trace as debug
 
 from pylearn2.models import mlp, maxout
 from pylearn2.training_algorithms import sgd, learning_rule
-from pylearn2.training_algorithms.sgd import MonitorBasedLRAdjuster
+from pylearn2.training_algorithms.sgd import LinearDecayOverEpoch
 from pylearn2.termination_criteria import EpochCounter
 from pylearn2.datasets.dense_design_matrix import DenseDesignMatrix
 from pylearn2.space import Conv2DSpace, VectorSpace
@@ -122,7 +122,7 @@ def train(d=None):
     vec_space = VectorSpace(d.size ** 2)
     nn = mlp.MLP(layers=layers, input_space=in_space, batch_size=batch_size)
     trainer = sgd.SGD(
-        learning_rate=1.1,
+        learning_rate=0.05,
         cost=SumOfCosts(costs=[
             dropout.Dropout(),
             MethodCost(method='cost_from_X'),
@@ -133,8 +133,10 @@ def train(d=None):
         termination_criterion=epochs,
         learning_rule=learning_rule.Momentum(init_momentum=0.1),
     )
-    lr_adjustor = MonitorBasedLRAdjuster(
-        dataset_name='train',
+    lr_adjustor = LinearDecayOverEpoch(
+        start=1,
+        saturate=10,
+        decay_factor=.1,
     )
     momentum_adjustor = learning_rule.MomentumAdjustor(
         final_momentum=.99,
