@@ -4,17 +4,13 @@ import warnings
 import theano
 import pylearn2
 import numpy as np
-import cPickle as pk
 
 from data import Data, RotationalDDM
 
 from sklearn.datasets import fetch_mldata
-from sklearn import neighbors
 from sklearn.metrics import accuracy_score, classification_report
 
 from pdb import set_trace as debug
-
-from theano import tensor as T
 
 from pylearn2.models import mlp, maxout
 from pylearn2.training_algorithms import sgd, learning_rule
@@ -136,17 +132,19 @@ def train(d=None):
         batch_size=batch_size,
         train_iteration_mode='even_shuffled_sequential',
         termination_criterion=epochs,
-        learning_rule=learning_rule.Momentum(init_momentum=0.5),
+        learning_rule=learning_rule.Momentum(init_momentum=0.1),
     )
+    lr_adjustor = MonitorBasedLRAdjuster()
     momentum_adjustor = learning_rule.MomentumAdjustor(
         final_momentum=.99,
         start=1,
-        saturate=10
+        saturate=10,
     )
     trainer.setup(nn, train_set)
     print 'Learning'
-    test_X = vec_space.np_format_as(test_X, nn.get_input_space())
-    train_X = vec_space.np_format_as(train_X, nn.get_input_space())
+    # try to remove this code:
+    # test_X = vec_space.np_format_as(test_X, nn.get_input_space())
+    # train_X = vec_space.np_format_as(train_X, nn.get_input_space())
     i = 0
     X = nn.get_input_space().make_theano_batch()
     Y = nn.fprop(X)
@@ -171,11 +169,13 @@ def train(d=None):
         print classification_report(test_y, predictions)
         print 'Adjusting parameters...'
         momentum_adjustor.on_monitor(nn, valid_set, trainer)
+        lr_adjustor.on_monitor(nn, valid_set, trainer)
         i += 1
         print ' '
 
 if __name__ == '__main__':
     mnist = fetch_mldata('MNIST original')
+    mnist.data = np.rint(mnist.data)
     d = Data(dataset=mnist, train_perc=0.7, valid_perc=0.2, test_perc=0.1,
              shuffle=False)
     train(d=d)
