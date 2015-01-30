@@ -118,21 +118,20 @@ def train(d=None):
     in_space = Conv2DSpace(
         shape=[d.size, d.size],
         num_channels=1,
-        # axes=['c', 0, 1, 'b'],
     )
     vec_space = VectorSpace(d.size ** 2)
     nn = mlp.MLP(layers=layers, input_space=in_space, batch_size=batch_size)
     trainer = sgd.SGD(
-        learning_rate=.01,
+        learning_rate=0.1,
         cost=SumOfCosts(costs=[
-            # dropout.Dropout(),
+            dropout.Dropout(),
             MethodCost(method='cost_from_X'),
             WeightDecay(decay_coeffs),
         ]),
         batch_size=batch_size,
         train_iteration_mode='even_shuffled_sequential',
         termination_criterion=epochs,
-        learning_rule=learning_rule.Momentum(init_momentum=0.1),
+        learning_rule=learning_rule.Momentum(init_momentum=0.5),
     )
     lr_adjustor = MonitorBasedLRAdjuster()
     momentum_adjustor = learning_rule.MomentumAdjustor(
@@ -143,8 +142,8 @@ def train(d=None):
     trainer.setup(nn, train_set)
     print 'Learning'
     # try to remove this code:
-    # test_X = vec_space.np_format_as(test_X, nn.get_input_space())
-    # train_X = vec_space.np_format_as(train_X, nn.get_input_space())
+    test_X = vec_space.np_format_as(test_X, nn.get_input_space())
+    train_X = vec_space.np_format_as(train_X, nn.get_input_space())
     i = 0
     X = nn.get_input_space().make_theano_batch()
     Y = nn.fprop(X)
@@ -175,7 +174,7 @@ def train(d=None):
 
 if __name__ == '__main__':
     mnist = fetch_mldata('MNIST original')
-    mnist.data = np.rint(mnist.data)
+    mnist.data = np.rint(mnist.data/255)
     d = Data(dataset=mnist, train_perc=0.7, valid_perc=0.2, test_perc=0.1,
              shuffle=False)
     train(d=d)
