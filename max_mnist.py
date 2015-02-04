@@ -199,8 +199,8 @@ if __name__ == '__main__':
     mnist.data = np.rint(mnist.data / 255)
     d = Data(dataset=mnist, train_perc=0.5, valid_perc=0.1, test_perc=0.1,
              shuffle=False)
-    from sklearn.svm import SVC
-    s = SVC()
-    s.fit(d.train_X, d.train_Y)
-    print s.score(d.test_X, d.test_Y)
-    # train(d=d)
+    # from sklearn.svm import SVC
+    # s = SVC()
+    # s.fit(d.train_X, d.train_Y)
+    # print s.score(d.test_X, d.test_Y)
+    train(d=d)
