@@ -21,8 +21,7 @@ warnings.filterwarnings("ignore")
 
 
 def convert_one_hot(data):
-    return np.array([[1 if y == c else 0 for c in xrange(
-        len(np.unique(data)))] for y in data])
+    return np.array([[1 if y == c else 0 for c in xrange(10)] for y in data])
 
 
 def convert_categorical(data):
@@ -105,11 +104,16 @@ def train(d):
         net.monitor()
         epoch += 1
 
+"""
+    TODO: Get above .98 when classifying mnist from sklearn.
+    Because it is possible to get that score on the PyLearn mnist, with this code.
+"""
 
 if __name__ == '__main__':
     mnist = fetch_mldata('MNIST original')
-    mnist.data = np.rint(mnist.data / 255)
-    d = Data(dataset=mnist, train_perc=0.7, valid_perc=0.2, test_perc=0.1,
+    debug()
+    mnist.data = (mnist.data.astype(float) / 255)
+    d = Data(dataset=mnist, train_perc=0.65, valid_perc=0.2, test_perc=0.15,
              shuffle=False)
     train(d=d)
     # train()
