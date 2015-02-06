@@ -122,7 +122,7 @@ def train(d):
         termination_criterion=termination_criteria.MonitorBased(channel_name='valid_y_misclass')
     )
     trainer = sgd.SGD(
-	learning_rate=0.1,
+	learning_rate=0.15,
 	cost=dropout.Dropout(),
 	batch_size=batch_size,
 	monitoring_dataset={
