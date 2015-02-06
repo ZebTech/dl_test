@@ -54,10 +54,10 @@ def train(d):
     # test = mnist.MNIST(which_set='test')
 
     print 'Setting up'
-    batch_size = 10000
+    batch_size = 1000
     conv = mlp.ConvRectifiedLinear(
         layer_name='c0',
-        output_channels=64,
+        output_channels=20,
         irange=.05,
         kernel_shape=[5, 5],
         pool_shape=[4, 4],
@@ -80,9 +80,9 @@ def train(d):
         num_channels=1,
     )
     net = mlp.MLP(
-        layers=[sigmoid, smax],
-        # input_space=in_space,
-        nvis=784,
+        layers=[conv, smax],
+        input_space=in_space,
+        # nvis=784,
     )
     trainer = bgd.BGD(
         batch_size=batch_size,
