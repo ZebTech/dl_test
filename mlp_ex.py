@@ -70,12 +70,24 @@ def train(d):
     mout = MaxoutConvC01B(
 	layer_name='m0',
 	num_pieces=4,
-	num_channels=20,
+	num_channels=96,
 	irange=.05,
 	kernel_shape=[5, 5],
 	pool_shape=[4, 4],
 	pool_stride=[2, 2],
+	W_lr_scale=0.25,
 	max_kernel_norm=1.9365
+    )
+    mout2 = MaxoutConvC01B(
+	layer_name='m1',
+	num_pieces=4,
+	num_channels=96,
+	irange=.05,
+	kernel_shape=[5, 5],
+	pool_shape=[4, 4],
+	pool_stride=[2, 2],
+	W_lr_scale=0.25,
+	max_kernel_norm=1.9365	
     )
     sigmoid = mlp.Sigmoid(
         layer_name='Sigmoid',
@@ -90,10 +102,10 @@ def train(d):
     in_space = Conv2DSpace(
         shape=[28, 28],
         num_channels=1,
-#	axes=['c', 0, 1, 'b']
+	axes=['c', 0, 1, 'b']
     )
     net = mlp.MLP(
-        layers=[conv, smax],
+        layers=[mout, mout2, smax],
         input_space=in_space,
         # nvis=784,
     )
@@ -129,7 +141,7 @@ def train(d):
         epoch += 1
 
 """
-    TODO: Get above .98 with one maxout conv layer. And then add several ones.
+    TODO: Get above .98 with momentum and maxout and dropout. And then add several ones.
 """
 
 if __name__ == '__main__':
