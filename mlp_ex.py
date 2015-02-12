@@ -14,8 +14,10 @@ from pdb import set_trace as debug
 from pylearn2.space import Conv2DSpace
 from pylearn2 import termination_criteria
 from pylearn2.models import mlp
+from pylearn2.models.maxout import MaxoutConvC01B
 from pylearn2.datasets.dense_design_matrix import DenseDesignMatrix
-from pylearn2.training_algorithms import bgd
+from pylearn2.training_algorithms import bgd, sgd
+from pylearn2.costs.mlp import dropout
 
 warnings.filterwarnings("ignore")
 
@@ -65,6 +67,28 @@ def train(d):
         # W_lr_scale=0.25,
         max_kernel_norm=1.9365
     )
+    mout = MaxoutConvC01B(
+	layer_name='m0',
+	num_pieces=4,
+	num_channels=96,
+	irange=.05,
+	kernel_shape=[5, 5],
+	pool_shape=[4, 4],
+	pool_stride=[2, 2],
+	W_lr_scale=0.25,
+	max_kernel_norm=1.9365
+    )
+    mout2 = MaxoutConvC01B(
+	layer_name='m1',
+	num_pieces=4,
+	num_channels=96,
+	irange=.05,
+	kernel_shape=[5, 5],
+	pool_shape=[4, 4],
+	pool_stride=[2, 2],
+	W_lr_scale=0.25,
+	max_kernel_norm=1.9365	
+    )
     sigmoid = mlp.Sigmoid(
         layer_name='Sigmoid',
         dim=500,
@@ -78,9 +102,10 @@ def train(d):
     in_space = Conv2DSpace(
         shape=[28, 28],
         num_channels=1,
+	axes=['c', 0, 1, 'b']
     )
     net = mlp.MLP(
-        layers=[conv, smax],
+        layers=[mout, mout2, smax],
         input_space=in_space,
         # nvis=784,
     )
@@ -96,6 +121,17 @@ def train(d):
         },
         termination_criterion=termination_criteria.MonitorBased(channel_name='valid_y_misclass')
     )
+    trainer = sgd.SGD(
+	learning_rate=0.15,
+	cost=dropout.Dropout(),
+	batch_size=batch_size,
+	monitoring_dataset={
+	    'train': train,
+	    'valid': valid,
+	    'test': test
+	},
+        termination_criterion=termination_criteria.MonitorBased(channel_name='valid_y_misclass')
+    )
     trainer.setup(net, train)
     epoch = 0
     while True:
@@ -105,15 +141,14 @@ def train(d):
         epoch += 1
 
 """
-    TODO: Get above .98 when classifying mnist from sklearn.
-    Because it is possible to get that score on the PyLearn mnist, with this code.
+    TODO: Get above .98 with momentum and maxout and dropout. And then add several ones.
 """
 
 if __name__ == '__main__':
     mnist = fetch_mldata('MNIST original')
-    debug()
+    # debug()
     mnist.data = (mnist.data.astype(float) / 255)
     d = Data(dataset=mnist, train_perc=0.65, valid_perc=0.2, test_perc=0.15,
-             shuffle=False)
+             shuffle=True)
     train(d=d)
     # train()
