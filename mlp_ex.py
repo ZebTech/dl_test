@@ -43,17 +43,6 @@ def train(d):
     train = DenseDesignMatrix(X=d.train_X, y=convert_one_hot(d.train_Y))
     valid = DenseDesignMatrix(X=d.valid_X, y=convert_one_hot(d.valid_Y))
     test = DenseDesignMatrix(X=d.test_X, y=convert_one_hot(d.test_Y))
-    # train = mnist.MNIST(
-    #     which_set='train',
-    #     start=0,
-    #     stop=50000,
-    # )
-    # valid = mnist.MNIST(
-    #     which_set='train',
-    #     start=50000,
-    #     stop=60000,
-    # )
-    # test = mnist.MNIST(which_set='test')
 
     print 'Setting up'
     batch_size = 1000
@@ -68,26 +57,26 @@ def train(d):
         max_kernel_norm=1.9365
     )
     mout = MaxoutConvC01B(
-	layer_name='m0',
-	num_pieces=4,
-	num_channels=96,
-	irange=.05,
-	kernel_shape=[5, 5],
-	pool_shape=[4, 4],
-	pool_stride=[2, 2],
-	W_lr_scale=0.25,
-	max_kernel_norm=1.9365
+        layer_name='m0',
+        num_pieces=4,
+        num_channels=96,
+        irange=.05,
+        kernel_shape=[5, 5],
+        pool_shape=[4, 4],
+        pool_stride=[2, 2],
+        W_lr_scale=0.25,
+        max_kernel_norm=1.9365
     )
     mout2 = MaxoutConvC01B(
-	layer_name='m1',
-	num_pieces=4,
-	num_channels=96,
-	irange=.05,
-	kernel_shape=[5, 5],
-	pool_shape=[4, 4],
-	pool_stride=[2, 2],
-	W_lr_scale=0.25,
-	max_kernel_norm=1.9365	
+        layer_name='m1',
+        num_pieces=4,
+        num_channels=96,
+        irange=.05,
+        kernel_shape=[5, 5],
+        pool_shape=[4, 4],
+        pool_stride=[2, 2],
+        W_lr_scale=0.25,
+        max_kernel_norm=1.9365
     )
     sigmoid = mlp.Sigmoid(
         layer_name='Sigmoid',
@@ -102,7 +91,7 @@ def train(d):
     in_space = Conv2DSpace(
         shape=[28, 28],
         num_channels=1,
-	axes=['c', 0, 1, 'b']
+        axes=['c', 0, 1, 'b']
     )
     net = mlp.MLP(
         layers=[mout, mout2, smax],
@@ -119,18 +108,20 @@ def train(d):
             'valid': valid,
             'test': test
         },
-        termination_criterion=termination_criteria.MonitorBased(channel_name='valid_y_misclass')
+        termination_criterion=termination_criteria.MonitorBased(
+            channel_name='valid_y_misclass')
     )
     trainer = sgd.SGD(
-	learning_rate=0.15,
-	cost=dropout.Dropout(),
-	batch_size=batch_size,
-	monitoring_dataset={
-	    'train': train,
-	    'valid': valid,
-	    'test': test
-	},
-        termination_criterion=termination_criteria.MonitorBased(channel_name='valid_y_misclass')
+        learning_rate=0.15,
+        cost=dropout.Dropout(),
+        batch_size=batch_size,
+        monitoring_dataset={
+            'train': train,
+            'valid': valid,
+            'test': test
+        },
+        termination_criterion=termination_criteria.MonitorBased(
+            channel_name='valid_y_misclass')
     )
     trainer.setup(net, train)
     epoch = 0
